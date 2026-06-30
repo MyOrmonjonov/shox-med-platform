@@ -17,7 +17,11 @@ public class DoctorMapper {
         User user = doctor.getUser();
 
         String fullName = user != null
-                ? (user.getFirstName() + " " + user.getLastName())
+                ? user.getFirstName() + " " + user.getLastName()
+                : null;
+
+        String specialization = doctor.getSpecializationEntity() != null
+                ? doctor.getSpecializationEntity().getNameUz()
                 : null;
 
         return DoctorResponse.builder()
@@ -25,7 +29,7 @@ public class DoctorMapper {
                 .userId(user != null ? user.getId() : null)
                 .fullName(fullName)
                 .photoUrl(user != null ? user.getPhotoUrl() : null)
-                .specialization(doctor.getSpecialization())
+                .specialization(specialization)
                 .experienceYears(doctor.getExperienceYears())
                 .education(doctor.getEducation())
                 .certificates(doctor.getCertificates())

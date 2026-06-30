@@ -21,10 +21,14 @@ public class AppointmentMapper {
 
         String doctorName = null;
         String specialization = null;
+
         if (appointment.getDoctor() != null && appointment.getDoctor().getUser() != null) {
             doctorName = appointment.getDoctor().getUser().getFirstName() + " " +
                     appointment.getDoctor().getUser().getLastName();
-            specialization = appointment.getDoctor().getSpecialization();
+
+            specialization = appointment.getDoctor().getSpecializationEntity() != null
+                    ? appointment.getDoctor().getSpecializationEntity().getNameUz()
+                    : null;
         }
 
         return AppointmentResponse.builder()

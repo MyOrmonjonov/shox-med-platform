@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.shox.med.entity.Doctor;
 import uz.shox.med.entity.DoctorSchedule;
 import uz.shox.med.entity.DoctorTimeSlot;
+import uz.shox.med.enums.SlotStatus;
 import uz.shox.med.exception.ResourceNotFoundException;
 import uz.shox.med.repository.DoctorRepository;
 import uz.shox.med.repository.DoctorScheduleRepository;
@@ -85,7 +86,7 @@ public class DoctorTimeSlotGeneratorServiceImpl implements DoctorTimeSlotGenerat
                         .branch(schedule.getBranch())
                         .startTime(startDateTime)
                         .endTime(endDateTime)
-                        .booked(false)
+                        .status(SlotStatus.AVAILABLE)
                         .active(true)
                         .build();
 
