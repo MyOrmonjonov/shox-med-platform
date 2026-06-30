@@ -2,9 +2,9 @@ package uz.shox.med.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import uz.shox.med.enums.SlotStatus;
 
 import java.time.LocalDateTime;
-
 @Entity
 @Table(name = "doctor_time_slots")
 @Getter
@@ -22,7 +22,8 @@ public class DoctorTimeSlot extends BaseEntity {
 
     private LocalDateTime endTime;
 
-    private Boolean booked = false;
+    @Enumerated(EnumType.STRING)
+    private SlotStatus status = SlotStatus.AVAILABLE;
 
     private Boolean active = true;
 

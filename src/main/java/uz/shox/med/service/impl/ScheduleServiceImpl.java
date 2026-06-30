@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import uz.shox.med.dto.schedule.AvailableTimeResponse;
 import uz.shox.med.entity.Doctor;
 import uz.shox.med.entity.DoctorSchedule;
+import uz.shox.med.enums.SlotStatus;
 import uz.shox.med.exception.ResourceNotFoundException;
 import uz.shox.med.repository.DoctorRepository;
 import uz.shox.med.repository.DoctorScheduleRepository;
@@ -29,42 +30,25 @@ public class ScheduleServiceImpl implements ScheduleService {
         Doctor doctor = doctorRepository.findById(doctorId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shifokor topilmadi"));
 
-        DayOfWeek dayOfWeek = date.getDayOfWeek();
+        LocalDateTime from = date.atStartOfDay();
+        LocalDateTime to = date.plusDays(1).atStartOfDay();
 
-        List<DoctorSchedule> schedules =
-                doctorScheduleRepository.findByDoctorAndDayOfWeekAndActiveTrue(doctor, dayOfWeek);
-
-        List<AvailableTimeResponse> result = new ArrayList<>();
-
-        for (DoctorSchedule schedule : schedules) {
-
-            LocalDateTime start = LocalDateTime.of(date, schedule.getStartTime());
-            LocalDateTime end = LocalDateTime.of(date, schedule.getEndTime());
-
-            LocalDateTime current = start;
-
-            while (current.plusMinutes(schedule.getSlotDurationMinutes()).isBefore(end)
-                    || current.plusMinutes(schedule.getSlotDurationMinutes()).isEqual(end)) {
-
-                LocalDateTime slotEnd = current.plusMinutes(schedule.getSlotDurationMinutes());
-
-                boolean booked = doctorTimeSlotRepository.existsByDoctorAndStartTimeAndBookedTrue(
+        return doctorTimeSlotRepository
+                .findByDoctorAndStartTimeBetweenAndActiveTrueOrderByStartTimeAsc(
                         doctor,
-                        current
-                );
-
-                result.add(
-                        AvailableTimeResponse.builder()
-                                .startTime(current)
-                                .endTime(slotEnd)
-                                .available(!booked && current.isAfter(LocalDateTime.now()))
-                                .build()
-                );
-
-                current = slotEnd;
-            }
-        }
-
-        return result;
+                        from,
+                        to
+                )
+                .stream()
+                .map(slot -> AvailableTimeResponse.builder()
+                        .startTime(slot.getStartTime())
+                        .endTime(slot.getEndTime())
+                        .available(
+                                slot.getStatus() == SlotStatus.AVAILABLE
+                                        && slot.getStartTime().isAfter(LocalDateTime.now())
+                        )
+                        .build()
+                )
+                .toList();
     }
 }

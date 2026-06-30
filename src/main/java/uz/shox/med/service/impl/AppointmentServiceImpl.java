@@ -6,20 +6,15 @@ import org.springframework.transaction.annotation.Transactional;
 import uz.shox.med.dto.appointment.AppointmentCreateRequest;
 import uz.shox.med.dto.appointment.AppointmentResponse;
 import uz.shox.med.entity.*;
-import uz.shox.med.enums.AppointmentAction;
-import uz.shox.med.enums.AppointmentSource;
-import uz.shox.med.enums.AppointmentStatus;
-import uz.shox.med.enums.NotificationType;
+import uz.shox.med.enums.*;
+import uz.shox.med.exception.BadRequestException;
 import uz.shox.med.exception.ResourceNotFoundException;
 import uz.shox.med.mapper.AppointmentMapper;
 import uz.shox.med.notification.AppointmentNotificationBuilder;
 import uz.shox.med.repository.*;
-import uz.shox.med.service.AppointmentHistoryService;
-import uz.shox.med.service.AppointmentService;
-import uz.shox.med.service.NotificationService;
-import uz.shox.med.service.PatientService;
-import uz.shox.med.exception.BadRequestException;
+import uz.shox.med.service.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -36,6 +31,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final NotificationService notificationService;
     private final AppointmentNotificationBuilder notificationBuilder;
     private final DoctorTimeSlotRepository doctorTimeSlotRepository;
+
     @Override
     @Transactional
     public AppointmentResponse createAppointment(User user, AppointmentCreateRequest request) {
@@ -50,27 +46,31 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         ServiceItem serviceItem = serviceItemRepository.findById(request.getServiceItemId())
                 .orElseThrow(() -> new ResourceNotFoundException("Xizmat topilmadi"));
-        DoctorTimeSlot timeSlot = doctorTimeSlotRepository
-                .findByDoctorAndStartTime(doctor, request.getAppointmentTime())
-                .orElseGet(() -> DoctorTimeSlot.builder()
-                        .doctor(doctor)
-                        .branch(branch)
-                        .startTime(request.getAppointmentTime())
-                        .endTime(request.getAppointmentTime().plusMinutes(30))
-                        .booked(false)
-                        .active(true)
-                        .build()
-                );
 
-        if (Boolean.TRUE.equals(timeSlot.getBooked())) {
+        DoctorTimeSlot timeSlot = doctorTimeSlotRepository.findById(request.getTimeSlotId())
+                .orElseThrow(() -> new ResourceNotFoundException("Vaqt sloti topilmadi"));
+
+        if (!timeSlot.getDoctor().getId().equals(doctor.getId())) {
+            throw new BadRequestException("Tanlangan slot bu shifokorga tegishli emas");
+        }
+
+        if (!timeSlot.getBranch().getId().equals(branch.getId())) {
+            throw new BadRequestException("Tanlangan slot bu filialga tegishli emas");
+        }
+
+        if (timeSlot.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new BadRequestException("O'tib ketgan vaqtga qabul yaratib bo'lmaydi");
+        }
+
+        if (timeSlot.getStatus() != SlotStatus.AVAILABLE) {
             throw new BadRequestException("Bu vaqt allaqachon band qilingan");
         }
 
-        timeSlot.setBooked(true);
+        timeSlot.setStatus(SlotStatus.BOOKED);
         timeSlot = doctorTimeSlotRepository.save(timeSlot);
 
         Appointment appointment = Appointment.builder()
-                .appointmentTime(request.getAppointmentTime())
+                .appointmentTime(timeSlot.getStartTime())
                 .patientComment(request.getPatientComment())
                 .patient(patient)
                 .doctor(doctor)
@@ -89,6 +89,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setQueueNumber("A" + String.format("%03d", appointment.getId()));
 
         appointment = appointmentRepository.save(appointment);
+
         appointmentHistoryService.saveHistory(
                 appointment,
                 AppointmentAction.CREATE,
@@ -98,12 +99,14 @@ public class AppointmentServiceImpl implements AppointmentService {
                 null,
                 "Qabul yaratildi"
         );
+
         notificationService.createTelegramNotification(
                 user,
                 NotificationType.APPOINTMENT_CREATED,
                 "Qabul yaratildi",
                 notificationBuilder.appointmentCreated(appointment)
         );
+
         return appointmentMapper.toResponse(appointment);
     }
 

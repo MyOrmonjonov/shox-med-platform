@@ -12,5 +12,8 @@ public interface DoctorService {
 
     List<DoctorResponse> searchBySpecialization(String specialization);
 
+    List<DoctorResponse> getDoctorsBySpecialization(Long specializationId);
+
     DoctorResponse getById(Long id);
+    List<DoctorResponse> getDoctorsByBranchAndSpecialization(Long branchId, Long specializationId);
 }

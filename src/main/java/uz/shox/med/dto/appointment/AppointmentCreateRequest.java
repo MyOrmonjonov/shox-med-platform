@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
-
 @Getter
 @Setter
 @NoArgsConstructor
@@ -23,18 +22,11 @@ public class AppointmentCreateRequest {
     @NotNull(message = "Xizmat majburiy")
     private Long serviceItemId;
 
-    @NotNull(message = "Qabul vaqti majburiy")
-    @Future(message = "Qabul vaqti kelajakda bo'lishi kerak")
-    private LocalDateTime appointmentTime;
+    @NotNull(message = "Vaqt sloti majburiy")
+    private Long timeSlotId;
 
     @Size(max = 1000)
-    private String patientComment;
+    private String patientComment; // ixtiyoriy
 
-    /**
-     * Telegram Mini App
-     * Mobile
-     * CRM
-     */
     private String source;
-
 }

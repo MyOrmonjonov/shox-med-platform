@@ -47,4 +47,30 @@ public class DoctorController {
                 ApiResponse.success("Qidiruv natijalari", doctorService.searchBySpecialization(specialization))
         );
     }
+
+
+    @GetMapping("/specialization/{specializationId}")
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> getDoctorsBySpecialization(
+            @PathVariable Long specializationId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Mutaxassislik bo'yicha shifokorlar",
+                        doctorService.getDoctorsBySpecialization(specializationId)
+                )
+        );
+    }
+
+    @GetMapping("/branch/{branchId}/specialization/{specializationId}")
+    public ResponseEntity<ApiResponse<List<DoctorResponse>>> getDoctorsByBranchAndSpecialization(
+            @PathVariable Long branchId,
+            @PathVariable Long specializationId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Filial va mutaxassislik bo'yicha shifokorlar",
+                        doctorService.getDoctorsByBranchAndSpecialization(branchId, specializationId)
+                )
+        );
+    }
 }
